@@ -1,4 +1,5 @@
 require 'csv'
+$stocks_file_name = 'stocks.csv'
 
 def menu()
     
@@ -13,31 +14,49 @@ def add_inventory()
     puts "Enter name of item "
     name = gets().chomp.downcase()
     puts "Enter price of item "
-    price = gets().chomp.downcase()
+    price = gets().chomp
     puts "Enter the quantity "
-    quantity = gets().chomp.downcase()
-    if(File.exist?("stocks.csv"))
-        CSV.open('stocks.csv', 'a+') do |csv|
-            csv << [name, price, quantity]
-          end
-    else
-        CSV.open('stocks.csv', 'a+') do |csv|
-            csv << ["name", "price", "quantity"]
-            csv << [name, price, quantity]
-          end
+    quantity = gets().chomp.to_i
+
+    table = CSV.read($stocks_file_name, headers: true, header_converters: :symbol, converters: :all)
+    item_found = false
+    table.each do |row|
+        if row[:name].to_s.downcase == name.to_s.downcase
+            item_found = true
+            row[:price] = price
+            row[:quantity] = quantity.to_i + row[:quantity].to_i
+        end
     end
+
+    if item_found
+    CSV.open($stocks_file_name, 'w') do |csv_file|
+        csv_file << table.headers
+        table.each do |row|
+            csv_file << row
+        end
+    end
+    else
+
+        CSV.open('stocks.csv', 'a+') do |csv|
+            csv << [name, price, quantity]
+        end
+    end
+ 
 end
 
 def display_items()
     puts "*********************  Welcome to inventory Managment  ********************"
    if(File.exist?("stocks.csv"))
         puts "Current items are: "
-        table = CSV.parse(File.read("stocks.csv"), headers: true)
+        table = CSV.read($stocks_file_name, headers: true, header_converters: :symbol, converters: :all)
         table.each do |item_row|
-            puts "Name: #{item_row["name"]}, Price: #{item_row["price"]}, Available quantity: #{item_row["quantity"]}"
+            puts "Name: #{item_row[:name]}, Price: #{item_row[:price]}, Available quantity: #{item_row[:quantity]}"
         end
     else
         puts "Stock is empty"
+        CSV.open('stocks.csv', 'a+') do |csv|
+            csv << ["name", "price", "quantity"]
+        end
     end
     puts
     puts
